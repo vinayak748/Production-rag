@@ -1,0 +1,10 @@
+{"query": "What is reciprocal rank fusion?", "relevant_chunk_ids": ["hybrid_search::chunk_0"]}
+{"query": "Why does BM25 fail on paraphrased queries?", "relevant_chunk_ids": ["hybrid_search::chunk_0"]}
+{"query": "What is the difference between a bi-encoder and a cross-encoder?", "relevant_chunk_ids": ["reranking::chunk_0"]}
+{"query": "Why is reranking done on a candidate pool instead of the whole corpus?", "relevant_chunk_ids": ["reranking::chunk_0"]}
+{"query": "What does precision at K measure?", "relevant_chunk_ids": ["evaluation_metrics::chunk_0"]}
+{"query": "How is NDCG different from MRR?", "relevant_chunk_ids": ["evaluation_metrics::chunk_0"]}
+{"query": "How many queries should a labeled eval set have?", "relevant_chunk_ids": ["evaluation_metrics::chunk_1"]}
+{"query": "Why does the pipeline use both BM25 and dense retrieval?", "relevant_chunk_ids": ["my_notes::chunk_0"]}
+{"query": "What is RRF used for in this project?", "relevant_chunk_ids": ["my_notes::chunk_0"]}
+{"query": "Why is the reranker only applied to a candidate pool?", "relevant_chunk_ids": ["my_notes::chunk_0"]}
