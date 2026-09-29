@@ -43,7 +43,7 @@ def _generate_gemini(query: str, context_chunks: list[str], model: str) -> str:
 
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     response = client.models.generate_content(
-        model=model or "gemini-2.5-flash",
+        model=model or "gemini-3.8-flash",
         contents=_build_prompt(query, context_chunks),
         config={"system_instruction": SYSTEM_PROMPT, "max_output_tokens": 500},
     )
