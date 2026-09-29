@@ -5,6 +5,12 @@ hybrid retrieval (BM25 + dense embeddings, fused with Reciprocal Rank Fusion),
 cross-encoder reranking, and a proper evaluation harness — not just a
 "call an LLM API" demo.
 
+  ## Live Demo
+   https://production-rag-w45r.onrender.com
+   
+   Note: runs in lite mode (BM25 + Gemini) to fit the free tier's 512MB RAM limit.
+   Full hybrid pipeline (dense + reranker) available locally via `LITE_MODE=false`.
+   
 ## Why this exists
 
 Most RAG tutorials stop at "embed chunks, cosine-similarity search, stuff into
@@ -123,7 +129,7 @@ production-rag/
 └── requirements.txt
 ```
 
-## Experiments log (fill this in as you build)
+## Experiments log
 
 Keep a running log here — this is what you'll actually talk about in
 interviews. Example format:
@@ -134,7 +140,7 @@ interviews. Example format:
 | Added reranking | Precision@5 | 0.55 | 0.71 |
 | Chunk size 256 → 512 | NDCG@10 | 0.64 | 0.70 |
 
-## Resume bullet points (edit with your real numbers once you've run evals)
+## Resume bullet points
 
 - Built a hybrid retrieval pipeline (BM25 + dense embeddings fused via
   Reciprocal Rank Fusion) with cross-encoder reranking, improving
