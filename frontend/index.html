@@ -46,9 +46,8 @@
   <h1>Production RAG</h1>
   <p class="sub">Hybrid retrieval (BM25 + dense + reranking) over your documents.</p>
 
-  <!-- Set this to your deployed backend URL before deploying, e.g.
-       https://your-app.onrender.com -->
-  <script>const API_BASE = "http://localhost:8000";</script>
+  <!-- Empty = same origin (the backend serves this page). Set a full URL only if hosting the frontend elsewhere. -->
+  <script>const API_BASE = "";  // same origin: backend serves this page</script>
 
   <input id="q" type="text" placeholder="Ask a question about your documents…" />
   <button id="ask">Ask</button>

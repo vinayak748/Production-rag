@@ -1,14 +1,16 @@
 """End-to-end RAG pipeline: hybrid retrieval -> rerank -> generate."""
 
 from .retrieval.hybrid import HybridRetriever
-from .retrieval.reranker import Reranker
 from .generation import generate_answer
 
 
 class RAGPipeline:
-    def __init__(self, use_reranker: bool = True):
-        self.retriever = HybridRetriever()
-        self.reranker = Reranker() if use_reranker else None
+    def __init__(self, use_reranker: bool = True, use_dense: bool = True):
+        self.retriever = HybridRetriever(use_dense=use_dense)
+        self.reranker = None
+        if use_reranker:
+            from .retrieval.reranker import Reranker  # lazy: heavy import
+            self.reranker = Reranker()
         self._chunks: dict[str, str] = {}
 
     def index(self, chunks: dict[str, str]) -> None:

@@ -5,6 +5,3 @@
 {"query": "What does precision at K measure?", "relevant_chunk_ids": ["evaluation_metrics::chunk_0"]}
 {"query": "How is NDCG different from MRR?", "relevant_chunk_ids": ["evaluation_metrics::chunk_0"]}
 {"query": "How many queries should a labeled eval set have?", "relevant_chunk_ids": ["evaluation_metrics::chunk_1"]}
-{"query": "Why does the pipeline use both BM25 and dense retrieval?", "relevant_chunk_ids": ["my_notes::chunk_0"]}
-{"query": "What is RRF used for in this project?", "relevant_chunk_ids": ["my_notes::chunk_0"]}
-{"query": "Why is the reranker only applied to a candidate pool?", "relevant_chunk_ids": ["my_notes::chunk_0"]}

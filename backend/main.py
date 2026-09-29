@@ -15,6 +15,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Make the project root importable (backend/ sits one level below root)
@@ -38,6 +39,21 @@ app.add_middleware(
 pipeline: RAGPipeline | None = None
 
 
+def _flag(name: str, default: bool) -> bool:
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+# LITE_MODE=true (default) -> BM25 only, no reranker: fits Render's 512 MB free tier.
+# Set LITE_MODE=false on a bigger machine (e.g. Hugging Face Spaces) for the full
+# pipeline. USE_DENSE / USE_RERANKER override the LITE_MODE default individually.
+LITE_MODE = _flag("LITE_MODE", True)
+USE_DENSE = _flag("USE_DENSE", not LITE_MODE)
+USE_RERANKER = _flag("USE_RERANKER", not LITE_MODE)
+
+
 class QueryRequest(BaseModel):
     question: str
     use_reranker: bool = True
@@ -49,12 +65,12 @@ class QueryResponse(BaseModel):
     source_chunk_ids: list[str]
 
 
-def build_pipeline(use_reranker: bool = True) -> RAGPipeline:
+def build_pipeline() -> RAGPipeline:
     docs = load_documents(str(ROOT / "data" / "documents"))
     chunks = chunk_documents(docs)
     chunk_texts = {cid: c.text for cid, c in chunks.items()}
 
-    p = RAGPipeline(use_reranker=use_reranker)
+    p = RAGPipeline(use_reranker=USE_RERANKER, use_dense=USE_DENSE)
     p.index(chunk_texts)
     return p
 
@@ -72,7 +88,11 @@ def startup():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "indexed": pipeline is not None}
+    return {
+        "status": "ok",
+        "indexed": pipeline is not None,
+        "mode": {"bm25": True, "dense": USE_DENSE, "reranker": USE_RERANKER},
+    }
 
 
 @app.post("/reindex")
@@ -86,8 +106,9 @@ def reindex():
 def query(req: QueryRequest):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Index not ready yet.")
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not set on the server.")
     try:
-        
         result = pipeline.query(req.question)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -96,3 +117,7 @@ def query(req: QueryRequest):
         answer=result["answer"],
         source_chunk_ids=result["source_chunk_ids"],
     )
+
+
+# Serve the frontend from the same service, so only one Render service is needed.
+app.mount("/", StaticFiles(directory=str(ROOT / "frontend"), html=True), name="frontend")

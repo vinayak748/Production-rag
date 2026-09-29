@@ -1,14 +1,19 @@
+"""LLM generation over retrieved context. Kept separate from retrieval so
+you can evaluate retrieval quality independently of generation quality —
+a common mistake is to only judge RAG by "does the final answer look right,"
+which hides whether retrieval or generation was the actual problem."""
+
 import os
-import ollama
+from anthropic import Anthropic
 
 SYSTEM_PROMPT = """You answer questions using ONLY the provided context.
 If the context doesn't contain the answer, say so explicitly instead of
 guessing. Cite which excerpt(s) you used."""
 
-DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "llama3")
 
+def generate_answer(query: str, context_chunks: list[str], model: str = "claude-sonnet-4-6") -> str:
+    client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-def generate_answer(query: str, context_chunks: list[str], model: str = DEFAULT_MODEL) -> str:
     context_block = "\n\n".join(
         f"[Excerpt {i+1}]\n{chunk}" for i, chunk in enumerate(context_chunks)
     )
@@ -18,11 +23,10 @@ def generate_answer(query: str, context_chunks: list[str], model: str = DEFAULT_
 
 Question: {query}"""
 
-    response = ollama.chat(
+    response = client.messages.create(
         model=model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
+        max_tokens=500,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
     )
-    return response["message"]["content"]
+    return response.content[0].text

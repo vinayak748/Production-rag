@@ -1,0 +1,3 @@
+# Optional: adds dense retrieval on a low-memory host (ONNX, no torch).
+# Use together with requirements-lite.txt, and set USE_DENSE=true DENSE_BACKEND=fastembed
+fastembed>=0.3.6
