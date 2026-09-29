@@ -52,6 +52,7 @@ def _flag(name: str, default: bool) -> bool:
 LITE_MODE = _flag("LITE_MODE", True)
 USE_DENSE = _flag("USE_DENSE", not LITE_MODE)
 USE_RERANKER = _flag("USE_RERANKER", not LITE_MODE)
+GEN_BACKEND = os.environ.get("GEN_BACKEND", "anthropic").strip().lower()
 
 
 class QueryRequest(BaseModel):
@@ -79,10 +80,11 @@ def build_pipeline() -> RAGPipeline:
 def startup():
     """Build the index once when the server starts, so the first query is fast."""
     global pipeline
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    key_name = "GEMINI_API_KEY" if GEN_BACKEND == "gemini" else "ANTHROPIC_API_KEY"
+    if not os.environ.get(key_name):
         # Don't crash the server if the key is missing -- just fail queries later
         # with a clear error, so /health still works.
-        print("WARNING: ANTHROPIC_API_KEY is not set. /query will fail until it is.")
+        print(f"WARNING: {key_name} is not set. /query will fail until it is.")
     pipeline = build_pipeline()
 
 
@@ -106,8 +108,9 @@ def reindex():
 def query(req: QueryRequest):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Index not ready yet.")
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not set on the server.")
+    key_name = "GEMINI_API_KEY" if GEN_BACKEND == "gemini" else "ANTHROPIC_API_KEY"
+    if not os.environ.get(key_name):
+        raise HTTPException(status_code=500, detail=f"{key_name} is not set on the server.")
     try:
         result = pipeline.query(req.question)
     except Exception as e:
