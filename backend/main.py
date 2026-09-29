@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -66,6 +66,13 @@ class QueryResponse(BaseModel):
     source_chunk_ids: list[str]
 
 
+class UploadResponse(BaseModel):
+    status: str
+    doc_id: str
+    chars_extracted: int
+    total_documents: int
+
+
 def build_pipeline() -> RAGPipeline:
     docs = load_documents(str(ROOT / "data" / "documents"))
     chunks = chunk_documents(docs)
@@ -102,6 +109,57 @@ def reindex():
     global pipeline
     pipeline = build_pipeline()
     return {"status": "reindexed"}
+
+
+def _extract_text(filename: str, raw: bytes) -> str:
+    """Extract plain text from an uploaded file. txt/md read as-is; pdf via pypdf."""
+    suffix = Path(filename).suffix.lower()
+    if suffix in (".txt", ".md"):
+        return raw.decode("utf-8", errors="ignore")
+    if suffix == ".pdf":
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            raise HTTPException(
+                status_code=500,
+                detail="pypdf is not installed on the server; add it to requirements to enable PDF uploads.",
+            )
+        import io
+
+        reader = PdfReader(io.BytesIO(raw))
+        return "\n\n".join(page.extract_text() or "" for page in reader.pages)
+    raise HTTPException(
+        status_code=400,
+        detail=f"Unsupported file type '{suffix}'. Upload .txt, .md, or .pdf.",
+    )
+
+
+@app.post("/upload", response_model=UploadResponse)
+async def upload_document(file: UploadFile = File(...)):
+    """Add a new document to the corpus and rebuild the index.
+
+    Saves the extracted text under data/documents/<name>.md and reindexes,
+    so the document is searchable immediately -- no server restart needed.
+    """
+    raw = await file.read()
+    text = _extract_text(file.filename, raw)
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No extractable text found in the uploaded file.")
+
+    doc_id = Path(file.filename).stem
+    docs_dir = ROOT / "data" / "documents"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    (docs_dir / f"{doc_id}.md").write_text(text, encoding="utf-8")
+
+    global pipeline
+    pipeline = build_pipeline()
+
+    return UploadResponse(
+        status="indexed",
+        doc_id=doc_id,
+        chars_extracted=len(text),
+        total_documents=len(load_documents(str(docs_dir))),
+    )
 
 
 @app.post("/query", response_model=QueryResponse)
